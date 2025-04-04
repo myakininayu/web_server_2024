@@ -17,7 +17,7 @@ export async function create(req: Request, res: Response) {
       id: "",
       name,
       photo,
-      price,
+      price: Number(price),
       category,
     };
 
@@ -59,7 +59,7 @@ export async function updateById(req: Request, res: Response) {
       id,
       name,
       photo,
-      price,
+      price: Number(price),
       category,
     };
 

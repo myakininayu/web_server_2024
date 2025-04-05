@@ -10,9 +10,13 @@ import {
   deleteDoc,
   updateDoc,
   getDoc,
-  where
+  where,
+  orderBy,
+  limit as limitItems,
+  Query,
 } from "firebase/firestore";
-import { Data } from "./types.js";
+import { Data, Condition } from "./types.js";
+import { WhereFilterOp } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -49,8 +53,8 @@ export const uploadProcessedData = async (data: Data) => {
 export const getTheDataById = async (documentId: string) => {
   try {
     const documentRef = doc(fireStoreDB, "newMenu", documentId);
-    const docSnap = await getDoc(documentRef);  // Получаем документ по ID
-    
+    const docSnap = await getDoc(documentRef);
+
     if (docSnap.exists()) {
       // Если документ существует, возвращаем его данные
       return docSnap.data();
@@ -78,21 +82,77 @@ export const getTheData = async () => {
   return finalData;
 };
 
-export const getDataByPriceGreaterThan = async (minPrice: number) => {
+// Функция для текстового поиска
+// Поиск только по целым строкам. Если ввести "до", то найдет "дом"
+// если ввести "ом", то "дом" не найдет
+const applyTextSearch = (q: Query, field: string, searchText: string) => {
+  const searchStr = searchText.toLowerCase();
+  return query(
+    q,
+    where(field, ">=", searchStr),
+    where(field, "<=", searchStr + "\uf8ff")
+  );
+};
+
+export const getFilteredMenuData = async ({
+  operator,
+  value,
+  filterField,
+  limit,
+}: {
+  operator: Condition;
+  value: number | string;
+  filterField: string;
+  limit?: number;
+}) => {
   try {
-    const collectionReference = collection(fireStoreDB, "newMenu");
-    const q = query(collectionReference, where("price", ">", minPrice));
+    const collectionRef = collection(fireStoreDB, "newMenu");
+    let q: Query;
 
-    const docSnap = await getDocs(q);
-    const finalData: any[] = [];
+    // Обрабатываем текстовый поиск отдельно
+    if (operator === "text_search") {
+      if (typeof value !== "string") {
+        throw new Error("Для текстового поиска value должно быть строкой");
+      }
+      q = applyTextSearch(query(collectionRef), filterField, value);
+    } else {
+      // Стандартные операторы
+      q = query(collectionRef, where(filterField, operator, value));
+    }
 
-    docSnap.forEach((doc) => {
-      finalData.push(doc.data());
-    });
+    if (limit) {
+      q = query(q, limitItems(limit));
+    }
 
-    return finalData;
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => doc.data() as Data);
   } catch (error) {
-    console.error("Ошибка при получении данных по цене:", error);
+    console.error("Ошибка при получении данных:", error);
+    return [];
+  }
+};
+
+export const getSortedMenuData = async ({
+  sortField = "price",
+  sortDirection = "asc",
+  limit,
+}: {
+  sortField?: string;
+  sortDirection?: "asc" | "desc";
+  limit?: number;
+}) => {
+  try {
+    const collectionRef = collection(fireStoreDB, "newMenu");
+    let q = query(collectionRef, orderBy(sortField, sortDirection));
+
+    if (limit) {
+      q = query(q, limitItems(limit));
+    }
+
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map((doc) => doc.data() as Data);
+  } catch (error) {
+    console.error("Ошибка при сортировке данных:", error);
     return [];
   }
 };
@@ -110,10 +170,10 @@ export const deleteDataById = async (documentId: string) => {
 export const updateDataById = async (documentId: string, updatedData: Data) => {
   try {
     const documentRef = doc(fireStoreDB, "newMenu", documentId);
-    
+
     // Приводим updatedData к типу Record<string, any>
     await updateDoc(documentRef, updatedData as Record<string, any>);
-    
+
     console.log(`Документ с ID ${documentId} был обновлен`);
   } catch (error) {
     console.error("Ошибка при обновлении документа:", error);

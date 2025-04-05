@@ -5,9 +5,10 @@ import {
   updateDataById,
   deleteDataById,
   getTheDataById,
-  getDataByPriceGreaterThan,
+  getFilteredMenuData,
+  getSortedMenuData,
 } from "../db.js";
-import { Data } from "../types.js";
+import { Condition, Data } from "../types.js";
 
 export async function create(req: Request, res: Response) {
   try {
@@ -36,7 +37,9 @@ export async function getById(req: Request, res: Response) {
     res.status(200).json(data);
   } catch (error) {
     console.error("Ошибка при получении инфо о блюде с заданным ID:", error);
-    res.status(500).json({ error: "Ошибка при получении инфо о блюде с заданным ID." });
+    res
+      .status(500)
+      .json({ error: "Ошибка при получении инфо о блюде с заданным ID." });
   }
 }
 
@@ -83,18 +86,56 @@ export async function deleteById(req: Request, res: Response) {
   }
 }
 
-export async function getByPrice(req: Request, res: Response) {
+export async function getFilteredMenu(req: Request, res: Response) {
   try {
-    const { minPrice } = req.query; // Получаем минимальную цену из query параметров
-    if (!minPrice || isNaN(Number(minPrice))) {
-      res.status(400).json({ error: "Параметр minPrice обязателен и должен быть числом" });
+    const { operator, filterField, limit, value } = req.query;
+
+    // Guards - ифы с ретерном, которые защищают код от невалидных данных
+    if (
+      value === undefined ||
+      filterField === undefined ||
+      operator === undefined
+    ) {
+      res.status(400).json({ error: "Не все обязательные параметры заданы" });
       return;
     }
 
-    const data = await getDataByPriceGreaterThan(Number(minPrice)); // Вызов функции для получения данных по фильтру
-    res.status(200).json(data); // Возвращаем отфильтрованные данные
+    const data = await getFilteredMenuData({
+      operator: operator as Condition,
+      value: filterField === "price" ? Number(value) : (value as string),
+      filterField: filterField as string,
+      limit: limit ? Number(limit) : undefined,
+    });
+    res.status(200).json(data);
   } catch (error) {
     console.error("Ошибка при получении данных по цене:", error);
     res.status(500).json({ error: "Ошибка при получении данных по цене." });
   }
 }
+
+export const getSortedMenu = async (req: Request, res: Response) => {
+  try {
+    // Получаем параметры из query-строки
+    const { sort_by = "price", sort_direction = "asc", limit } = req.query;
+
+    // Преобразуем limit в число (если передан)
+    const limitNumber = limit ? Number(limit as string) : undefined;
+
+    console.log("===", sort_by, sort_direction, limit);
+
+    // Получаем данные с сортировкой
+    const data = await getSortedMenuData({
+      sortField: sort_by as string,
+      sortDirection: sort_direction as "asc" | "desc",
+      limit: limitNumber,
+    });
+
+    res.status(200).json(data);
+  } catch (error) {
+    console.error("Ошибка при сортировке меню:", error);
+    res.status(500).json({
+      success: false,
+      message: "Произошла ошибка при сортировке меню",
+    });
+  }
+};

@@ -5,7 +5,8 @@ import {
   getById, 
   updateById, 
   deleteById,
-  getByPrice,
+  getFilteredMenu,
+  getSortedMenu
 } from '../controllers/cafeController.js';
 
 const router = Router();
@@ -14,7 +15,10 @@ const router = Router();
 router.get('/dishes', getAll);
 
 // Получение блюд с фильтрацией по цене
-router.get('/dishes/by-price', getByPrice);
+router.get('/dishes/by-price', getFilteredMenu);
+
+// Получение отсортированных элементов
+router.get('/dishes/sorted', getSortedMenu);
 
 // Получение блюда по ID
 router.get('/dishes/:id', getById);

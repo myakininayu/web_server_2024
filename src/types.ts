@@ -7,4 +7,4 @@ export interface Data {
 }
 
 // Не забываем писать export
-export type Condition = ">" | ">=" | "<" | "<=" | "==" | "!=" | "text_search";
+export type Condition = ">" | ">=" | "<" | "<=" | "==" | "!=";

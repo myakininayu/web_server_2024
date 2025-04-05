@@ -82,18 +82,6 @@ export const getTheData = async () => {
   return finalData;
 };
 
-// Функция для текстового поиска
-// Поиск только по целым строкам. Если ввести "до", то найдет "дом"
-// если ввести "ом", то "дом" не найдет
-const applyTextSearch = (q: Query, field: string, searchText: string) => {
-  const searchStr = searchText.toLowerCase();
-  return query(
-    q,
-    where(field, ">=", searchStr),
-    where(field, "<=", searchStr + "\uf8ff")
-  );
-};
-
 export const getFilteredMenuData = async ({
   operator,
   value,
@@ -109,16 +97,7 @@ export const getFilteredMenuData = async ({
     const collectionRef = collection(fireStoreDB, "newMenu");
     let q: Query;
 
-    // Обрабатываем текстовый поиск отдельно
-    if (operator === "text_search") {
-      if (typeof value !== "string") {
-        throw new Error("Для текстового поиска value должно быть строкой");
-      }
-      q = applyTextSearch(query(collectionRef), filterField, value);
-    } else {
-      // Стандартные операторы
-      q = query(collectionRef, where(filterField, operator, value));
-    }
+    q = query(collectionRef, where(filterField, operator, value));
 
     if (limit) {
       q = query(q, limitItems(limit));

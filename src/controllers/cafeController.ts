@@ -92,9 +92,7 @@ export async function getFilteredMenu(req: Request, res: Response) {
 
     // Guards - ифы с ретерном, которые защищают код от невалидных данных
     if (
-      value === undefined ||
-      filterField === undefined ||
-      operator === undefined
+      value === undefined || filterField === undefined || operator === undefined
     ) {
       res.status(400).json({ error: "Не все обязательные параметры заданы" });
       return;

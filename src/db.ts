@@ -16,7 +16,6 @@ import {
   Query,
 } from "firebase/firestore";
 import { Data, Condition } from "./types.js";
-import { WhereFilterOp } from "firebase/firestore";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -97,7 +96,7 @@ export const getFilteredMenuData = async ({
     const collectionRef = collection(fireStoreDB, "newMenu");
     let q: Query;
 
-    q = query(collectionRef, where(filterField, operator, value));
+    q = query(collectionRef, where(filterField, operator, value)); // orderby
 
     if (limit) {
       q = query(q, limitItems(limit));
